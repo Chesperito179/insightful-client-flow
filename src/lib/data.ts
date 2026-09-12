@@ -178,10 +178,11 @@ export const statusExpiracao = (expiracao: string, ref: Date = hoje): Expiration
 
 export const servidorPadrao: Servidor = { id: "s0", nome: "Sem servidor", custoCredito: 0, ativo: false };
 
-export const servidorDe = (cliente: Cliente): Servidor =>
-  servidores.find((s) => s.id === cliente.servidorId) ?? servidorPadrao;
+export const servidorDe = (cliente: Cliente, lista: Servidor[] = servidores): Servidor =>
+  lista.find((s) => s.id === cliente.servidorId) ?? servidorPadrao;
 
-export const clienteDe = (clienteId: string) => clientes.find((c) => c.id === clienteId);
+export const clienteDe = (clienteId: string, lista: Cliente[] = clientes) =>
+  lista.find((c) => c.id === clienteId);
 
 export interface ResumoDashboard {
   total: number;
@@ -197,15 +198,19 @@ export interface ResumoDashboard {
   percentualAtivos: number;
 }
 
-export const resumoDashboard = (): ResumoDashboard => {
-  const total = clientes.length;
-  const vencidos = clientes.filter((c) => statusExpiracao(c.expiracao) === "vencido");
-  const vencendo = clientes.filter((c) => statusExpiracao(c.expiracao) === "vencendo");
-  const vencemHoje = clientes.filter((c) => diasAteExpirar(c.expiracao) === 0).length;
+export const resumoDashboard = (
+  listaClientes: Cliente[] = clientes,
+  listaPagamentos: Pagamento[] = pagamentos,
+  listaServidores: Servidor[] = servidores,
+): ResumoDashboard => {
+  const total = listaClientes.length;
+  const vencidos = listaClientes.filter((c) => statusExpiracao(c.expiracao) === "vencido");
+  const vencendo = listaClientes.filter((c) => statusExpiracao(c.expiracao) === "vencendo");
+  const vencemHoje = listaClientes.filter((c) => diasAteExpirar(c.expiracao) === 0).length;
   const ativos = total - vencidos.length;
 
   const mesRef = hoje.getMonth();
-  const doMes = pagamentos.filter((p) => new Date(`${p.data}T12:00:00`).getMonth() === mesRef);
+  const doMes = listaPagamentos.filter((p) => new Date(`${p.data}T12:00:00`).getMonth() === mesRef);
   const recebidoMes = doMes.filter((p) => p.status === "pago").reduce((s, p) => s + p.valor, 0);
   const previstoReceber =
     doMes.filter((p) => p.status === "pendente").reduce((s, p) => s + p.valor, 0) +
@@ -213,8 +218,8 @@ export const resumoDashboard = (): ResumoDashboard => {
   const gastosMes = doMes
     .filter((p) => p.status === "pago")
     .reduce((s, p) => {
-      const cliente = clienteDe(p.clienteId);
-      return s + (cliente ? servidorDe(cliente).custoCredito : 0);
+      const cliente = clienteDe(p.clienteId, listaClientes);
+      return s + (cliente ? servidorDe(cliente, listaServidores).custoCredito : 0);
     }, 0);
 
   return {
@@ -232,10 +237,23 @@ export const resumoDashboard = (): ResumoDashboard => {
   };
 };
 
-export const proximasRenovacoes = () =>
-  [...clientes]
-    .sort((a, b) => diasAteExpirar(a.expiracao) - diasAteExpirar(b.expiracao))
-    .slice(0, 6);
+export const proximasRenovacoes = (lista: Cliente[] = clientes) =>
+  [...lista].sort((a, b) => diasAteExpirar(a.expiracao) - diasAteExpirar(b.expiracao)).slice(0, 6);
 
-export const ultimosPagamentos = () =>
-  [...pagamentos].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 6);
+export const ultimosPagamentos = (lista: Pagamento[] = pagamentos) =>
+  [...lista].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 6);
+
+/** Soma meses a uma data ISO, mantendo o dia quando possível. */
+export const somarMeses = (iso: string, meses: number) => {
+  const d = new Date(`${iso}T12:00:00`);
+  const dia = d.getDate();
+  d.setMonth(d.getMonth() + meses);
+  if (d.getDate() < dia) d.setDate(0);
+  return d.toISOString().slice(0, 10);
+};
+
+export const isoHoje = (ref: Date = hoje) => {
+  const d = new Date(ref);
+  d.setHours(12, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+};

@@ -92,7 +92,8 @@ function Renovacoes() {
                 <th className="px-2 py-2.5 font-medium">Expiração</th>
                 <th className="px-2 py-2.5 font-medium">Servidor</th>
                 <th className="px-2 py-2.5 font-medium">Aplicativo</th>
-                <th className="px-4 py-2.5 text-right font-medium">Valor</th>
+                <th className="px-2 py-2.5 text-right font-medium">Valor</th>
+                <th className="px-4 py-2.5 text-right font-medium">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -104,14 +105,23 @@ function Renovacoes() {
                   </td>
                   <td className="px-2 py-2.5 font-mono text-muted-foreground">{c.usuario}</td>
                   <td className="px-2 py-2.5 font-mono text-muted-foreground">{dateBR(c.expiracao)}</td>
-                  <td className="px-2 py-2.5 text-muted-foreground">{servidorDe(c).nome}</td>
+                  <td className="px-2 py-2.5 text-muted-foreground">{servidorDe(c, dados.servidores).nome}</td>
                   <td className="px-2 py-2.5 text-muted-foreground">{c.aplicativo}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-foreground">{brl(c.valor)}</td>
+                  <td className="px-2 py-2.5 text-right font-mono text-foreground">{brl(c.valor)}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setRenovando(c)}
+                      className="rounded-md border border-success/40 bg-success/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-success transition-colors hover:bg-success/20"
+                    >
+                      Renovar
+                    </button>
+                  </td>
                 </tr>
               ))}
               {lista.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center font-mono text-[12px] text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-10 text-center font-mono text-[12px] text-muted-foreground">
                     Nenhum cliente neste filtro.
                   </td>
                 </tr>
@@ -120,6 +130,8 @@ function Renovacoes() {
           </table>
         </div>
       </section>
+
+      <RenovarDialog cliente={renovando} onFechar={() => setRenovando(null)} />
     </AppShell>
   );
 }

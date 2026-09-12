@@ -124,7 +124,7 @@ function Dashboard() {
         <div className="min-w-0 overflow-hidden rounded-xl border border-border/60 bg-panel/30 backdrop-blur-md">
           <div className="flex items-center justify-between px-4 py-3">
             <h2 className="text-sm font-semibold tracking-tight text-foreground">Próximas renovações</h2>
-            <Link to="/renovacoes" className="label-mono transition-colors hover:text-success">
+            <Link to="/renovacoes" search={{ filtro: "todos" }} className="label-mono transition-colors hover:text-success">
               ver todas
             </Link>
           </div>

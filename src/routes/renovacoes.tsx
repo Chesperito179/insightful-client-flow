@@ -29,7 +29,7 @@ const corresponde = (expiracao: string, filtro: FiltroRenovacao) => {
 
 export const Route = createFileRoute("/renovacoes")({
   validateSearch: (search: Record<string, unknown>): { filtro: FiltroRenovacao } => {
-    const f = search.filtro;
+    const f = search["filtro"];
     return { filtro: f === "hoje" || f === "7dias" || f === "vencidos" ? f : "todos" };
   },
   head: () => ({

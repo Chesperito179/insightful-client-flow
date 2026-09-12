@@ -9,6 +9,7 @@ import {
   ultimosPagamentos,
 } from "@/lib/data";
 import { brl, dayMonth, num, percent } from "@/lib/format";
+import { useAppData } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,9 +31,10 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const r = resumoDashboard();
-  const renovacoes = proximasRenovacoes();
-  const pagos = ultimosPagamentos();
+  const dados = useAppData();
+  const r = resumoDashboard(dados.clientes, dados.pagamentos, dados.servidores);
+  const renovacoes = proximasRenovacoes(dados.clientes);
+  const pagos = ultimosPagamentos(dados.pagamentos);
 
   const kpis: Array<{
     label: string;
@@ -175,7 +177,7 @@ function Dashboard() {
               <tbody className="divide-y divide-border/40">
                 {pagos.map((p) => (
                   <tr key={p.id} className="transition-colors hover:bg-foreground/[0.03]">
-                    <td className="px-4 py-2.5 text-foreground">{clienteDe(p.clienteId)?.nome}</td>
+                    <td className="px-4 py-2.5 text-foreground">{clienteDe(p.clienteId, dados.clientes)?.nome}</td>
                     <td className="px-2 py-2.5 font-mono text-muted-foreground">{dayMonth(p.data)}</td>
                     <td className="px-2 py-2.5 font-mono text-foreground">{brl(p.valor)}</td>
                     <td className="px-4 py-2.5 text-right">

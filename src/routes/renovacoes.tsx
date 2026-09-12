@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusDot } from "@/components/StatusDot";
-import { clientes, diasAteExpirar, servidorDe, statusExpiracao } from "@/lib/data";
+import { RenovarDialog } from "@/components/clientes/RenovarDialog";
+import { diasAteExpirar, servidorDe, statusExpiracao, type Cliente } from "@/lib/data";
 import { brl, dateBR } from "@/lib/format";
+import { useAppData } from "@/lib/store";
+import { useState } from "react";
 
 type FiltroRenovacao = "todos" | "hoje" | "7dias" | "vencidos";
 
@@ -51,8 +54,10 @@ export const Route = createFileRoute("/renovacoes")({
 
 function Renovacoes() {
   const { filtro } = Route.useSearch();
+  const dados = useAppData();
+  const [renovando, setRenovando] = useState<Cliente | null>(null);
 
-  const lista = clientes
+  const lista = dados.clientes
     .filter((c) => corresponde(c.expiracao, filtro))
     .sort((a, b) => diasAteExpirar(a.expiracao) - diasAteExpirar(b.expiracao));
 
@@ -87,7 +92,8 @@ function Renovacoes() {
                 <th className="px-2 py-2.5 font-medium">Expiração</th>
                 <th className="px-2 py-2.5 font-medium">Servidor</th>
                 <th className="px-2 py-2.5 font-medium">Aplicativo</th>
-                <th className="px-4 py-2.5 text-right font-medium">Valor</th>
+                <th className="px-2 py-2.5 text-right font-medium">Valor</th>
+                <th className="px-4 py-2.5 text-right font-medium">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -99,14 +105,23 @@ function Renovacoes() {
                   </td>
                   <td className="px-2 py-2.5 font-mono text-muted-foreground">{c.usuario}</td>
                   <td className="px-2 py-2.5 font-mono text-muted-foreground">{dateBR(c.expiracao)}</td>
-                  <td className="px-2 py-2.5 text-muted-foreground">{servidorDe(c).nome}</td>
+                  <td className="px-2 py-2.5 text-muted-foreground">{servidorDe(c, dados.servidores).nome}</td>
                   <td className="px-2 py-2.5 text-muted-foreground">{c.aplicativo}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-foreground">{brl(c.valor)}</td>
+                  <td className="px-2 py-2.5 text-right font-mono text-foreground">{brl(c.valor)}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setRenovando(c)}
+                      className="rounded-md border border-success/40 bg-success/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-success transition-colors hover:bg-success/20"
+                    >
+                      Renovar
+                    </button>
+                  </td>
                 </tr>
               ))}
               {lista.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center font-mono text-[12px] text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-10 text-center font-mono text-[12px] text-muted-foreground">
                     Nenhum cliente neste filtro.
                   </td>
                 </tr>
@@ -115,6 +130,8 @@ function Renovacoes() {
           </table>
         </div>
       </section>
+
+      <RenovarDialog cliente={renovando} onFechar={() => setRenovando(null)} />
     </AppShell>
   );
 }

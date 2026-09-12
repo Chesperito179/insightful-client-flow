@@ -176,8 +176,10 @@ export const statusExpiracao = (expiracao: string, ref: Date = hoje): Expiration
   return "ativo";
 };
 
-export const servidorDe = (cliente: Cliente) =>
-  servidores.find((s) => s.id === cliente.servidorId) ?? servidores[0];
+export const servidorPadrao: Servidor = { id: "s0", nome: "Sem servidor", custoCredito: 0, ativo: false };
+
+export const servidorDe = (cliente: Cliente): Servidor =>
+  servidores.find((s) => s.id === cliente.servidorId) ?? servidorPadrao;
 
 export const clienteDe = (clienteId: string) => clientes.find((c) => c.id === clienteId);
 

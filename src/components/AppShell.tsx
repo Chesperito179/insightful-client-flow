@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { servidores } from "@/lib/data";
+import { servidorPadrao, servidores } from "@/lib/data";
 import { brl } from "@/lib/format";
 
 const navegacao = [
@@ -21,7 +21,7 @@ interface AppShellProps {
 }
 
 export function AppShell({ titulo, subtitulo, alertas = 0, children }: AppShellProps) {
-  const principal = servidores[0];
+  const principal = servidores[0] ?? servidorPadrao;
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-background font-sans text-foreground">

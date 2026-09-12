@@ -9,6 +9,7 @@ import {
   ultimosPagamentos,
 } from "@/lib/data";
 import { brl, dayMonth, num, percent } from "@/lib/format";
+import { useAppData } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,9 +31,10 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const r = resumoDashboard();
-  const renovacoes = proximasRenovacoes();
-  const pagos = ultimosPagamentos();
+  const dados = useAppData();
+  const r = resumoDashboard(dados.clientes, dados.pagamentos, dados.servidores);
+  const renovacoes = proximasRenovacoes(dados.clientes);
+  const pagos = ultimosPagamentos(dados.pagamentos);
 
   const kpis: Array<{
     label: string;

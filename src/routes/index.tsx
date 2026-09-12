@@ -34,12 +34,19 @@ function Dashboard() {
   const renovacoes = proximasRenovacoes();
   const pagos = ultimosPagamentos();
 
-  const kpis = [
+  const kpis: Array<{
+    label: string;
+    value: string;
+    tone: string;
+    hint?: string;
+    destaque?: boolean;
+    filtro?: "vencidos" | "hoje" | "7dias";
+  }> = [
     { label: "Total clientes", value: num(r.total), tone: "text-foreground" },
     { label: "Ativos", value: num(r.ativos), tone: "text-success", hint: percent(r.percentualAtivos) },
-    { label: "Vencidos", value: num(r.vencidos), tone: "text-danger" },
-    { label: "Vencem hoje", value: num(r.vencemHoje), tone: "text-foreground" },
-    { label: "Próximos 7 dias", value: num(r.vencem7Dias), tone: "text-warning" },
+    { label: "Vencidos", value: num(r.vencidos), tone: "text-danger", filtro: "vencidos" },
+    { label: "Vencem hoje", value: num(r.vencemHoje), tone: "text-foreground", filtro: "hoje" },
+    { label: "Próximos 7 dias", value: num(r.vencem7Dias), tone: "text-warning", filtro: "7dias" },
     { label: "Gastos mês", value: brl(r.gastosMes), tone: "text-foreground" },
     { label: "Recebido mês", value: brl(r.recebidoMes), tone: "text-success", destaque: true },
     { label: "Previsto receber", value: brl(r.previstoReceber), tone: "text-foreground" },
@@ -49,21 +56,38 @@ function Dashboard() {
   return (
     <AppShell titulo="Início" subtitulo="sexta, 12 set 2026 · 14:32" alertas={3}>
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
-        {kpis.map((kpi, i) => (
-          <div
-            key={kpi.label}
-            className={`animate-rise rounded-xl p-4 backdrop-blur-md ${
-              kpi.destaque
-                ? "border border-success/25 bg-success/[0.06]"
-                : "border border-border/60 bg-panel/40"
-            }`}
-            style={{ animationDelay: `${i * 40}ms` }}
-          >
-            <p className={`label-mono ${kpi.destaque ? "text-success/70" : ""}`}>{kpi.label}</p>
-            <p className={`mt-1.5 font-mono text-2xl font-medium ${kpi.tone}`}>{kpi.value}</p>
-            {kpi.hint ? <p className="mt-1 font-mono text-[11px] text-muted-foreground">{kpi.hint}</p> : null}
-          </div>
-        ))}
+        {kpis.map((kpi, i) => {
+          const classes = `animate-rise block rounded-xl p-4 backdrop-blur-md ${
+            kpi.destaque
+              ? "border border-success/25 bg-success/[0.06]"
+              : "border border-border/60 bg-panel/40"
+          } ${kpi.filtro ? "cursor-pointer transition-colors hover:border-foreground/25 hover:bg-panel/60" : ""}`;
+          const inner = (
+            <>
+              <p className={`label-mono ${kpi.destaque ? "text-success/70" : ""}`}>
+                {kpi.label}
+                {kpi.filtro ? <span className="ml-1 text-faint">→</span> : null}
+              </p>
+              <p className={`mt-1.5 font-mono text-2xl font-medium ${kpi.tone}`}>{kpi.value}</p>
+              {kpi.hint ? <p className="mt-1 font-mono text-[11px] text-muted-foreground">{kpi.hint}</p> : null}
+            </>
+          );
+          return kpi.filtro ? (
+            <Link
+              key={kpi.label}
+              to="/renovacoes"
+              search={{ filtro: kpi.filtro }}
+              className={classes}
+              style={{ animationDelay: `${i * 40}ms` }}
+            >
+              {inner}
+            </Link>
+          ) : (
+            <div key={kpi.label} className={classes} style={{ animationDelay: `${i * 40}ms` }}>
+              {inner}
+            </div>
+          );
+        })}
       </section>
 
       <section className="animate-rise grid gap-3 lg:grid-cols-3" style={{ animationDelay: "360ms" }}>

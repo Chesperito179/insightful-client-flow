@@ -54,8 +54,10 @@ export const Route = createFileRoute("/renovacoes")({
 
 function Renovacoes() {
   const { filtro } = Route.useSearch();
+  const dados = useAppData();
+  const [renovando, setRenovando] = useState<Cliente | null>(null);
 
-  const lista = clientes
+  const lista = dados.clientes
     .filter((c) => corresponde(c.expiracao, filtro))
     .sort((a, b) => diasAteExpirar(a.expiracao) - diasAteExpirar(b.expiracao));
 

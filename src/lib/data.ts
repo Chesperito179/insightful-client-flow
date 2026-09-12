@@ -257,3 +257,10 @@ export const isoHoje = (ref: Date = hoje) => {
   d.setHours(12, 0, 0, 0);
   return d.toISOString().slice(0, 10);
 };
+
+/** Calcula meses fracionados entre duas datas ISO — usado para custo de renovação personalizada. */
+export const mesesEntre = (de: string, ate: string) => {
+  const inicio = new Date(`${de}T12:00:00`);
+  const fim = new Date(`${ate}T12:00:00`);
+  return (fim.getTime() - inicio.getTime()) / (86_400_000 * 30);
+};

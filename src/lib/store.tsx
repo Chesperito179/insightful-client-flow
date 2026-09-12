@@ -33,7 +33,7 @@ interface ContextoDados extends Estado {
   criarCliente: (dados: NovoCliente) => { ok: boolean; erro?: string };
   atualizarCliente: (id: string, dados: NovoCliente) => { ok: boolean; erro?: string };
   removerCliente: (id: string) => void;
-  renovarCliente: (id: string, meses: number, valor: number) => void;
+  renovarCliente: (id: string, meses: number, valor: number, novaData?: string) => void;
   pagamentosDoCliente: (clienteId: string) => Pagamento[];
   restaurarDemo: () => void;
 }
@@ -102,14 +102,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           pagamentos: estado.pagamentos.filter((p) => p.clienteId !== id),
         });
       },
-      renovarCliente: (id, meses, valorPago) => {
+      renovarCliente: (id, meses, valorPago, novaData) => {
         const data = isoHoje();
         const clientesAtualizados = estado.clientes.map((c) => {
           if (c.id !== id) return c;
           const base = c.expiracao > data ? c.expiracao : data;
           return {
             ...c,
-            expiracao: somarMeses(base, meses),
+            expiracao: novaData ?? somarMeses(base, meses),
             ultimoPagamento: data,
             valorUltimoPagamento: valorPago,
           };

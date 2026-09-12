@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { isoHoje, servidorDe, somarMeses, type Cliente } from "@/lib/data";
+import { isoHoje, mesesEntre, servidorDe, somarMeses, type Cliente } from "@/lib/data";
 import { brl, dateBR } from "@/lib/format";
 import { useAppData } from "@/lib/store";
 
@@ -18,21 +18,34 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
   const dados = useAppData();
   const [meses, setMeses] = useState("1");
   const [valor, setValor] = useState("0");
+  const [dataPersonalizada, setDataPersonalizada] = useState("");
 
   useEffect(() => {
     if (cliente) {
       setMeses("1");
       setValor(String(cliente.valor));
+      setDataPersonalizada("");
     }
   }, [cliente]);
 
   if (!cliente) return null;
 
+  const ePersonalizado = meses === "personalizado";
   const qtdMeses = Number(meses) || 1;
   const valorPago = Number(valor.replace(",", ".")) || 0;
-  const custo = servidorDe(cliente, dados.servidores).custoCredito * qtdMeses;
+  const custoCredito = servidorDe(cliente, dados.servidores).custoCredito;
   const base = cliente.expiracao > isoHoje() ? cliente.expiracao : isoHoje();
-  const novaExpiracao = somarMeses(base, qtdMeses);
+
+  const novaExpiracao = ePersonalizado ? dataPersonalizada : somarMeses(base, qtdMeses);
+  const mesesParaCusto = ePersonalizado ? mesesEntre(base, dataPersonalizada) : qtdMeses;
+  const custo = custoCredito * mesesParaCusto;
+  const lucro = valorPago - custo;
+
+  const dataInvalida =
+    ePersonalizado &&
+    (!dataPersonalizada || dataPersonalizada <= cliente.expiracao);
+
+  const podeConfirmar = !ePersonalizado || (!!dataPersonalizada && dataPersonalizada > cliente.expiracao);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onFechar()}>
@@ -47,12 +60,22 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1">
             <span className="label-mono">Período (meses)</span>
-            <select className={campo} value={meses} onChange={(e) => setMeses(e.target.value)}>
+            <select
+              className={campo}
+              value={meses}
+              onChange={(e) => {
+                setMeses(e.target.value);
+                if (e.target.value === "personalizado") {
+                  setDataPersonalizada(base);
+                }
+              }}
+            >
               {[1, 3, 6, 12].map((m) => (
                 <option key={m} value={m}>
                   {m} {m === 1 ? "mês" : "meses"}
                 </option>
               ))}
+              <option value="personalizado">Personalizado</option>
             </select>
           </label>
           <label className="grid gap-1">
@@ -61,10 +84,32 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
           </label>
         </div>
 
+        {ePersonalizado && (
+          <label className="grid gap-1">
+            <span className="label-mono">Nova data de expiração</span>
+            <input
+              type="date"
+              className={campo}
+              value={dataPersonalizada}
+              onChange={(e) => setDataPersonalizada(e.target.value)}
+            />
+            <span className="font-mono text-[11px] text-muted-foreground">
+              Expiração atual: {dateBR(cliente.expiracao)}
+            </span>
+            {dataInvalida && (
+              <span className="font-mono text-[11px] text-danger">
+                A nova data de expiração deve ser posterior à data de expiração atual.
+              </span>
+            )}
+          </label>
+        )}
+
         <dl className="grid gap-1.5 rounded-lg border border-border/60 bg-panel/40 p-3 font-mono text-[12px]">
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Nova expiração</dt>
-            <dd className="text-foreground">{dateBR(novaExpiracao)}</dd>
+            <dd className="text-foreground">
+              {ePersonalizado && !dataPersonalizada ? "—" : dateBR(novaExpiracao)}
+            </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Custo do crédito</dt>
@@ -72,7 +117,7 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Lucro estimado</dt>
-            <dd className="text-success">{brl(valorPago - custo)}</dd>
+            <dd className="text-success">{brl(lucro)}</dd>
           </div>
         </dl>
 
@@ -86,12 +131,22 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
           </button>
           <button
             type="button"
+            disabled={!podeConfirmar}
             onClick={() => {
-              dados.renovarCliente(cliente.id, qtdMeses, valorPago);
-              toast.success(`Renovado até ${dateBR(novaExpiracao)}.`);
+              if (ePersonalizado) {
+                if (!dataPersonalizada || dataPersonalizada <= cliente.expiracao) {
+                  toast.error("A nova data de expiração deve ser posterior à data de expiração atual.");
+                  return;
+                }
+                dados.renovarCliente(cliente.id, 0, valorPago, dataPersonalizada);
+                toast.success(`Renovado até ${dateBR(dataPersonalizada)}.`);
+              } else {
+                dados.renovarCliente(cliente.id, qtdMeses, valorPago);
+                toast.success(`Renovado até ${dateBR(novaExpiracao)}.`);
+              }
               onFechar();
             }}
-            className="rounded-lg border border-success/40 bg-success/10 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-success transition-colors hover:bg-success/20"
+            className="rounded-lg border border-success/40 bg-success/10 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-success transition-colors hover:bg-success/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Confirmar renovação
           </button>

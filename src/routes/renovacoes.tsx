@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusDot } from "@/components/StatusDot";
-import { clientes, diasAteExpirar, servidorDe, statusExpiracao } from "@/lib/data";
+import { RenovarDialog } from "@/components/clientes/RenovarDialog";
+import { diasAteExpirar, servidorDe, statusExpiracao, type Cliente } from "@/lib/data";
 import { brl, dateBR } from "@/lib/format";
+import { useAppData } from "@/lib/store";
+import { useState } from "react";
 
 type FiltroRenovacao = "todos" | "hoje" | "7dias" | "vencidos";
 

@@ -177,7 +177,7 @@ function Dashboard() {
               <tbody className="divide-y divide-border/40">
                 {pagos.map((p) => (
                   <tr key={p.id} className="transition-colors hover:bg-foreground/[0.03]">
-                    <td className="px-4 py-2.5 text-foreground">{clienteDe(p.clienteId)?.nome}</td>
+                    <td className="px-4 py-2.5 text-foreground">{clienteDe(p.clienteId, dados.clientes)?.nome}</td>
                     <td className="px-2 py-2.5 font-mono text-muted-foreground">{dayMonth(p.data)}</td>
                     <td className="px-2 py-2.5 font-mono text-foreground">{brl(p.valor)}</td>
                     <td className="px-4 py-2.5 text-right">

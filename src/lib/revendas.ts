@@ -10,13 +10,20 @@ export interface Revenda {
   observacoes: string;
 }
 
-/** Registro de recarga. A regra financeira será definida em etapa posterior. */
 export interface RecargaRevenda {
   id: string;
   revendaId: string;
   data: string;
+  servidorId: string;
   quantidade: number;
-  valorCredito: number;
+  /** Snapshot do custo por crédito no momento da recarga. */
+  custoCredito: number;
+  /** quantidade × custoCredito. */
+  custoTotal: number;
+  /** Valor que a revenda pagou. */
+  valorCobrado: number;
+  /** valorCobrado − custoTotal. */
+  lucro: number;
   observacoes: string;
 }
 

@@ -30,6 +30,8 @@ export function RevendaDetalhes({ revenda, onFechar, onEditar, onRecarga }: Prop
   if (!revenda) return null;
 
   const historico = dados.recargasDaRevenda(revenda.id);
+  const nomeServidor = (servidorId: string) =>
+    dados.servidores.find((s) => s.id === servidorId)?.nome ?? "—";
 
   return (
     <Dialog open onOpenChange={(o) => !o && onFechar()}>
@@ -55,20 +57,35 @@ export function RevendaDetalhes({ revenda, onFechar, onEditar, onRecarga }: Prop
 
         <div>
           <p className="label-mono mb-1">Histórico de recargas</p>
-          <ul className="divide-y divide-border/40 rounded-lg border border-border/60 bg-panel/40">
+          <div className="divide-y divide-border/40 rounded-lg border border-border/60 bg-panel/40">
             {historico.map((r) => (
-              <li key={r.id} className="flex items-center justify-between px-3 py-2 font-mono text-[12px]">
-                <span className="text-muted-foreground">{dateBR(r.data)}</span>
-                <span className="text-foreground">{r.quantidade} crédito(s)</span>
-                <span className="text-muted-foreground">{brl(r.valorCredito)}</span>
-              </li>
+              <div key={r.id} className="px-3 py-2.5 font-mono text-[12px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{dateBR(r.data)}</span>
+                  <span className="text-foreground">{nomeServidor(r.servidorId)}</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {r.quantidade} crédito(s) × {brl(r.custoCredito)}
+                  </span>
+                  <span className="text-warning">{brl(r.custoTotal)}</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-muted-foreground">Pago</span>
+                  <span className="text-foreground">{brl(r.valorCobrado)}</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-muted-foreground">Lucro</span>
+                  <span className="text-success">{brl(r.lucro)}</span>
+                </div>
+              </div>
             ))}
             {historico.length === 0 ? (
-              <li className="px-3 py-4 text-center font-mono text-[12px] text-muted-foreground">
+              <p className="px-3 py-4 text-center font-mono text-[12px] text-muted-foreground">
                 Nenhuma recarga registrada.
-              </li>
+              </p>
             ) : null}
-          </ul>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2">

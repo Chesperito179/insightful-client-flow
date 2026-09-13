@@ -183,7 +183,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       registrarRecarga: (dadosRecarga) => {
         if (!estado.revendas.some((r) => r.id === dadosRecarga.revendaId))
           return { ok: false, erro: "Revenda não encontrada." };
-        const recarga: RecargaRevenda = { ...dadosRecarga, id: `rc${Date.now()}` };
+        const servidor = estado.servidores.find((s) => s.id === dadosRecarga.servidorId && s.ativo);
+        if (!servidor) return { ok: false, erro: "Selecione um servidor ativo." };
+        const recarga: RecargaRevenda = {
+          ...dadosRecarga,
+          custoCredito: servidor.custoCredito,
+          custoTotal: servidor.custoCredito * dadosRecarga.quantidade,
+          lucro: dadosRecarga.valorCobrado - servidor.custoCredito * dadosRecarga.quantidade,
+          id: `rc${Date.now()}`,
+        };
         persistir({
           ...estado,
           recargas: [recarga, ...estado.recargas],

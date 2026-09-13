@@ -10,6 +10,12 @@ import {
   type Pagamento,
   type Servidor,
 } from "@/lib/data";
+import {
+  recargas as recargasSeed,
+  revendas as revendasSeed,
+  type RecargaRevenda,
+  type Revenda,
+} from "@/lib/revendas";
 
 const STORAGE_KEY = "meridian.dados.v1";
 
@@ -17,12 +23,16 @@ interface Estado {
   clientes: Cliente[];
   servidores: Servidor[];
   pagamentos: Pagamento[];
+  revendas: Revenda[];
+  recargas: RecargaRevenda[];
 }
 
 const estadoInicial: Estado = {
   clientes: clientesSeed,
   servidores: servidoresSeed,
   pagamentos: pagamentosSeed,
+  revendas: revendasSeed,
+  recargas: recargasSeed,
 };
 
 export type NovoCliente = Omit<Cliente, "id" | "ultimoPagamento" | "valorUltimoPagamento"> &

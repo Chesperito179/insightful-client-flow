@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import {
   clientes as clientesSeed,
   isoHoje,
+  mesesEntre,
   pagamentos as pagamentosSeed,
   servidores as servidoresSeed,
   somarMeses,
@@ -144,11 +145,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
         const mesesParaCusto =
           novaData && meses === 0
-            ? (new Date(`${novaData}T12:00:00`).getTime() -
-                new Date(`${Math.max(cliente.expiracao, data)}T12:00:00`).getTime()) /
-              (86_400_000 * 30)
+            ? mesesEntre(Math.max(cliente.expiracao, data), novaData)
             : meses;
-        const qtdCreditos = Math.ceil(mesesParaCusto);
+        const qtdCreditos = mesesParaCusto;
         const saldo = saldoDe(estado.movimentacoes, cliente.servidorId);
         if (qtdCreditos > saldo)
           return { ok: false, erro: `Créditos insuficientes no servidor. Saldo disponível: ${saldo} crédito(s).` };

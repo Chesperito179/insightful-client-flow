@@ -42,7 +42,7 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
   const custo = custoCredito * mesesParaCusto;
   const lucro = valorPago - custo;
 
-  const qtdCreditos = Math.ceil(mesesParaCusto);
+  const qtdCreditos = mesesParaCusto;
   const saldo = dados.saldoServidor(servidor.id);
 
   const dataInvalida =
@@ -121,11 +121,15 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Créditos consumidos</dt>
-            <dd className="text-muted-foreground">{qtdCreditos}</dd>
+            <dd className="text-muted-foreground">
+              {qtdCreditos % 1 === 0 ? qtdCreditos : qtdCreditos.toFixed(2).replace(".", ",")}
+            </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Saldo do servidor</dt>
-            <dd className={saldo >= qtdCreditos ? "text-success" : "text-danger"}>{saldo} crédito(s)</dd>
+            <dd className={saldo >= qtdCreditos ? "text-success" : "text-danger"}>
+              {saldo % 1 === 0 ? saldo : saldo.toFixed(2).replace(".", ",")} crédito(s)
+            </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Lucro estimado</dt>

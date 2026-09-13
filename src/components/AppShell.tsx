@@ -6,6 +6,7 @@ import { brl } from "@/lib/format";
 const navegacao = [
   { to: "/", label: "Início" },
   { to: "/clientes", label: "Clientes" },
+  { to: "/revendas", label: "Revendas" },
   { to: "/financeiro", label: "Financeiro" },
   { to: "/renovacoes", label: "Renovações" },
   { to: "/pagamentos", label: "Pagamentos" },

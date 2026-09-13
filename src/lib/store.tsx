@@ -10,6 +10,12 @@ import {
   type Pagamento,
   type Servidor,
 } from "@/lib/data";
+import {
+  recargas as recargasSeed,
+  revendas as revendasSeed,
+  type RecargaRevenda,
+  type Revenda,
+} from "@/lib/revendas";
 
 const STORAGE_KEY = "meridian.dados.v1";
 
@@ -17,12 +23,16 @@ interface Estado {
   clientes: Cliente[];
   servidores: Servidor[];
   pagamentos: Pagamento[];
+  revendas: Revenda[];
+  recargas: RecargaRevenda[];
 }
 
 const estadoInicial: Estado = {
   clientes: clientesSeed,
   servidores: servidoresSeed,
   pagamentos: pagamentosSeed,
+  revendas: revendasSeed,
+  recargas: recargasSeed,
 };
 
 export type NovoCliente = Omit<Cliente, "id" | "ultimoPagamento" | "valorUltimoPagamento"> &
@@ -36,7 +46,17 @@ interface ContextoDados extends Estado {
   renovarCliente: (id: string, meses: number, valor: number, novaData?: string) => void;
   pagamentosDoCliente: (clienteId: string) => Pagamento[];
   restaurarDemo: () => void;
+  // Revendas
+  revendaUsuarioExiste: (usuario: string, ignorarId?: string) => boolean;
+  criarRevenda: (dados: NovaRevenda) => { ok: boolean; erro?: string };
+  atualizarRevenda: (id: string, dados: NovaRevenda) => { ok: boolean; erro?: string };
+  removerRevenda: (id: string) => void;
+  registrarRecarga: (dados: NovaRecarga) => { ok: boolean; erro?: string };
+  recargasDaRevenda: (revendaId: string) => RecargaRevenda[];
 }
+
+export type NovaRevenda = Omit<Revenda, "id" | "ultimaRecarga"> & Partial<Pick<Revenda, "ultimaRecarga">>;
+export type NovaRecarga = Omit<RecargaRevenda, "id">;
 
 const Ctx = createContext<ContextoDados | null>(null);
 
@@ -127,6 +147,54 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       pagamentosDoCliente: (clienteId) =>
         estado.pagamentos.filter((p) => p.clienteId === clienteId).sort((a, b) => b.data.localeCompare(a.data)),
       restaurarDemo: () => persistir(estadoInicial),
+
+      revendaUsuarioExiste: (usuario, ignorarId) =>
+        estado.revendas.some((r) => normalizar(r.usuario) === normalizar(usuario) && r.id !== ignorarId),
+      criarRevenda: (dadosRevenda) => {
+        if (!dadosRevenda.nome.trim()) return { ok: false, erro: "Informe o nome da revenda." };
+        if (!dadosRevenda.usuario.trim()) return { ok: false, erro: "Informe o usuário." };
+        if (estado.revendas.some((r) => normalizar(r.usuario) === normalizar(dadosRevenda.usuario)))
+          return { ok: false, erro: "Este usuário já está cadastrado no sistema." };
+        const nova: Revenda = {
+          ...dadosRevenda,
+          id: `r${Date.now()}`,
+          ultimaRecarga: dadosRevenda.ultimaRecarga ?? "",
+        };
+        persistir({ ...estado, revendas: [nova, ...estado.revendas] });
+        return { ok: true };
+      },
+      atualizarRevenda: (id, dadosRevenda) => {
+        if (!dadosRevenda.nome.trim()) return { ok: false, erro: "Informe o nome da revenda." };
+        if (estado.revendas.some((r) => normalizar(r.usuario) === normalizar(dadosRevenda.usuario) && r.id !== id))
+          return { ok: false, erro: "Este usuário já está cadastrado no sistema." };
+        persistir({
+          ...estado,
+          revendas: estado.revendas.map((r) => (r.id === id ? { ...r, ...dadosRevenda } : r)),
+        });
+        return { ok: true };
+      },
+      removerRevenda: (id) => {
+        persistir({
+          ...estado,
+          revendas: estado.revendas.filter((r) => r.id !== id),
+          recargas: estado.recargas.filter((r) => r.revendaId !== id),
+        });
+      },
+      registrarRecarga: (dadosRecarga) => {
+        if (!estado.revendas.some((r) => r.id === dadosRecarga.revendaId))
+          return { ok: false, erro: "Revenda não encontrada." };
+        const recarga: RecargaRevenda = { ...dadosRecarga, id: `rc${Date.now()}` };
+        persistir({
+          ...estado,
+          recargas: [recarga, ...estado.recargas],
+          revendas: estado.revendas.map((r) =>
+            r.id === recarga.revendaId ? { ...r, ultimaRecarga: recarga.data } : r,
+          ),
+        });
+        return { ok: true };
+      },
+      recargasDaRevenda: (revendaId) =>
+        estado.recargas.filter((r) => r.revendaId === revendaId).sort((a, b) => b.data.localeCompare(a.data)),
     };
   }, [estado, persistir]);
 

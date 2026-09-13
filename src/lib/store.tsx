@@ -46,7 +46,17 @@ interface ContextoDados extends Estado {
   renovarCliente: (id: string, meses: number, valor: number, novaData?: string) => void;
   pagamentosDoCliente: (clienteId: string) => Pagamento[];
   restaurarDemo: () => void;
+  // Revendas
+  revendaUsuarioExiste: (usuario: string, ignorarId?: string) => boolean;
+  criarRevenda: (dados: NovaRevenda) => { ok: boolean; erro?: string };
+  atualizarRevenda: (id: string, dados: NovaRevenda) => { ok: boolean; erro?: string };
+  removerRevenda: (id: string) => void;
+  registrarRecarga: (dados: NovaRecarga) => { ok: boolean; erro?: string };
+  recargasDaRevenda: (revendaId: string) => RecargaRevenda[];
 }
+
+export type NovaRevenda = Omit<Revenda, "id" | "ultimaRecarga"> & Partial<Pick<Revenda, "ultimaRecarga">>;
+export type NovaRecarga = Omit<RecargaRevenda, "id">;
 
 const Ctx = createContext<ContextoDados | null>(null);
 

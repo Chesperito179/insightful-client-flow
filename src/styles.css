@@ -151,4 +151,12 @@
     color: var(--color-foreground);
     -webkit-font-smoothing: antialiased;
   }
+
+  /* Native <select> options inherit the control's light foreground but
+     render on a default white dropdown, making them nearly invisible.
+     Force a solid panel background so options stay legible before hover. */
+  select option {
+    background-color: var(--panel);
+    color: var(--foreground);
+  }
 }

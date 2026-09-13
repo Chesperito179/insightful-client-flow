@@ -51,6 +51,7 @@ export function RecargaDialog({ revenda, onFechar }: Props) {
   const custoTotal = custoCredito * qtd;
   const valorPago = Number(valorCobrado.replace(",", ".")) || 0;
   const lucro = valorPago - custoTotal;
+  const saldo = servidorSelecionado ? dados.saldoServidor(servidorSelecionado.id) : 0;
 
   const podeRegistrar =
     !!servidorId &&
@@ -165,6 +166,10 @@ export function RecargaDialog({ revenda, onFechar }: Props) {
             </label>
 
             <dl className="grid gap-1.5 rounded-lg border border-border/60 bg-panel/40 p-3 font-mono text-[12px] sm:col-span-2">
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Saldo do servidor</dt>
+                <dd className={saldo >= qtd ? "text-success" : "text-danger"}>{saldo} crédito(s)</dd>
+              </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Custo total</dt>
                 <dd className="text-warning">{brl(custoTotal)}</dd>

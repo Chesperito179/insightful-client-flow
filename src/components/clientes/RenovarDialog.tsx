@@ -33,13 +33,17 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
   const ePersonalizado = meses === "personalizado";
   const qtdMeses = Number(meses) || 1;
   const valorPago = Number(valor.replace(",", ".")) || 0;
-  const custoCredito = servidorDe(cliente, dados.servidores).custoCredito;
+  const servidor = servidorDe(cliente, dados.servidores);
+  const custoCredito = servidor.custoCredito;
   const base = cliente.expiracao > isoHoje() ? cliente.expiracao : isoHoje();
 
   const novaExpiracao = ePersonalizado ? dataPersonalizada : somarMeses(base, qtdMeses);
   const mesesParaCusto = ePersonalizado ? mesesEntre(base, dataPersonalizada) : qtdMeses;
   const custo = custoCredito * mesesParaCusto;
   const lucro = valorPago - custo;
+
+  const qtdCreditos = Math.ceil(mesesParaCusto);
+  const saldo = dados.saldoServidor(servidor.id);
 
   const dataInvalida =
     ePersonalizado &&
@@ -116,6 +120,14 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
             <dd className="text-warning">{brl(custo)}</dd>
           </div>
           <div className="flex justify-between">
+            <dt className="text-muted-foreground">Créditos consumidos</dt>
+            <dd className="text-muted-foreground">{qtdCreditos}</dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Saldo do servidor</dt>
+            <dd className={saldo >= qtdCreditos ? "text-success" : "text-danger"}>{saldo} crédito(s)</dd>
+          </div>
+          <div className="flex justify-between">
             <dt className="text-muted-foreground">Lucro estimado</dt>
             <dd className="text-success">{brl(lucro)}</dd>
           </div>
@@ -138,10 +150,12 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
                   toast.error("A nova data de expiração deve ser posterior à data de expiração atual.");
                   return;
                 }
-                dados.renovarCliente(cliente.id, 0, valorPago, dataPersonalizada);
+                const r = dados.renovarCliente(cliente.id, 0, valorPago, dataPersonalizada);
+                if (!r.ok) { toast.error(r.erro ?? "Não foi possível renovar."); return; }
                 toast.success(`Renovado até ${dateBR(dataPersonalizada)}.`);
               } else {
-                dados.renovarCliente(cliente.id, qtdMeses, valorPago);
+                const r = dados.renovarCliente(cliente.id, qtdMeses, valorPago);
+                if (!r.ok) { toast.error(r.erro ?? "Não foi possível renovar."); return; }
                 toast.success(`Renovado até ${dateBR(novaExpiracao)}.`);
               }
               onFechar();

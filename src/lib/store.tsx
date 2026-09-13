@@ -16,6 +16,11 @@ import {
   type RecargaRevenda,
   type Revenda,
 } from "@/lib/revendas";
+import {
+  movimentacoes as movimentacoesSeed,
+  type MovimentacaoCredito,
+  type TipoMovimentacao,
+} from "@/lib/movimentacoes";
 
 const STORAGE_KEY = "meridian.dados.v1";
 
@@ -25,6 +30,7 @@ interface Estado {
   pagamentos: Pagamento[];
   revendas: Revenda[];
   recargas: RecargaRevenda[];
+  movimentacoes: MovimentacaoCredito[];
 }
 
 const estadoInicial: Estado = {
@@ -33,6 +39,7 @@ const estadoInicial: Estado = {
   pagamentos: pagamentosSeed,
   revendas: revendasSeed,
   recargas: recargasSeed,
+  movimentacoes: movimentacoesSeed,
 };
 
 export type NovoCliente = Omit<Cliente, "id" | "ultimoPagamento" | "valorUltimoPagamento"> &
@@ -43,7 +50,7 @@ interface ContextoDados extends Estado {
   criarCliente: (dados: NovoCliente) => { ok: boolean; erro?: string };
   atualizarCliente: (id: string, dados: NovoCliente) => { ok: boolean; erro?: string };
   removerCliente: (id: string) => void;
-  renovarCliente: (id: string, meses: number, valor: number, novaData?: string) => void;
+  renovarCliente: (id: string, meses: number, valor: number, novaData?: string) => { ok: boolean; erro?: string };
   pagamentosDoCliente: (clienteId: string) => Pagamento[];
   restaurarDemo: () => void;
   // Revendas
@@ -53,6 +60,10 @@ interface ContextoDados extends Estado {
   removerRevenda: (id: string) => void;
   registrarRecarga: (dados: NovaRecarga) => { ok: boolean; erro?: string };
   recargasDaRevenda: (revendaId: string) => RecargaRevenda[];
+  // Créditos
+  saldoServidor: (servidorId: string) => number;
+  registrarEntradaCreditos: (servidorId: string, quantidade: number, observacoes?: string) => { ok: boolean; erro?: string };
+  movimentacoesDoServidor: (servidorId: string) => MovimentacaoCredito[];
 }
 
 export type NovaRevenda = Omit<Revenda, "id" | "ultimaRecarga"> & Partial<Pick<Revenda, "ultimaRecarga">>;
@@ -62,10 +73,14 @@ const Ctx = createContext<ContextoDados | null>(null);
 
 const normalizar = (v: string) => v.trim().toLowerCase();
 
+const saldoDe = (lista: MovimentacaoCredito[], servidorId: string) =>
+  lista
+    .filter((m) => m.servidorId === servidorId)
+    .reduce((acc, m) => acc + (m.tipo === "entrada" ? m.quantidade : -m.quantidade), 0);
+
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [estado, setEstado] = useState<Estado>(estadoInicial);
 
-  // Persistência local (substituível por banco de dados nas próximas etapas).
   useEffect(() => {
     try {
       const bruto = window.localStorage.getItem(STORAGE_KEY);
@@ -124,6 +139,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       },
       renovarCliente: (id, meses, valorPago, novaData) => {
         const data = isoHoje();
+        const cliente = estado.clientes.find((c) => c.id === id);
+        if (!cliente) return { ok: false, erro: "Cliente não encontrado." };
+
+        const mesesParaCusto =
+          novaData && meses === 0
+            ? (new Date(`${novaData}T12:00:00`).getTime() -
+                new Date(`${Math.max(cliente.expiracao, data)}T12:00:00`).getTime()) /
+              (86_400_000 * 30)
+            : meses;
+        const qtdCreditos = Math.ceil(mesesParaCusto);
+        const saldo = saldoDe(estado.movimentacoes, cliente.servidorId);
+        if (qtdCreditos > saldo)
+          return { ok: false, erro: `Créditos insuficientes no servidor. Saldo disponível: ${saldo} crédito(s).` };
+
+        const pagamentoId = `p${Date.now()}`;
         const clientesAtualizados = estado.clientes.map((c) => {
           if (c.id !== id) return c;
           const base = c.expiracao > data ? c.expiracao : data;
@@ -135,14 +165,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           };
         });
         const pagamento: Pagamento = {
-          id: `p${Date.now()}`,
+          id: pagamentoId,
           clienteId: id,
           data,
           valor: valorPago,
           status: "pago",
           tipo: "renovação",
         };
-        persistir({ ...estado, clientes: clientesAtualizados, pagamentos: [pagamento, ...estado.pagamentos] });
+        const mov: MovimentacaoCredito = {
+          id: `mv${Date.now()}`,
+          servidorId: cliente.servidorId,
+          tipo: "saida_renovacao",
+          quantidade: qtdCreditos,
+          data,
+          pagamentoId,
+          clienteId: id,
+          observacoes: `Renovação — ${mesesParaCusto.toFixed(1).replace(".0", "")} mês(es)`,
+        };
+        persistir({
+          ...estado,
+          clientes: clientesAtualizados,
+          pagamentos: [pagamento, ...estado.pagamentos],
+          movimentacoes: [mov, ...estado.movimentacoes],
+        });
+        return { ok: true };
       },
       pagamentosDoCliente: (clienteId) =>
         estado.pagamentos.filter((p) => p.clienteId === clienteId).sort((a, b) => b.data.localeCompare(a.data)),
@@ -185,12 +231,27 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           return { ok: false, erro: "Revenda não encontrada." };
         const servidor = estado.servidores.find((s) => s.id === dadosRecarga.servidorId && s.ativo);
         if (!servidor) return { ok: false, erro: "Selecione um servidor ativo." };
+        const saldo = saldoDe(estado.movimentacoes, servidor.id);
+        if (dadosRecarga.quantidade > saldo)
+          return { ok: false, erro: `Créditos insuficientes no servidor. Saldo disponível: ${saldo} crédito(s).` };
+
+        const recargaId = `rc${Date.now()}`;
         const recarga: RecargaRevenda = {
           ...dadosRecarga,
           custoCredito: servidor.custoCredito,
           custoTotal: servidor.custoCredito * dadosRecarga.quantidade,
           lucro: dadosRecarga.valorCobrado - servidor.custoCredito * dadosRecarga.quantidade,
-          id: `rc${Date.now()}`,
+          id: recargaId,
+        };
+        const mov: MovimentacaoCredito = {
+          id: `mv${Date.now()}`,
+          servidorId: servidor.id,
+          tipo: "saida_recarga" as TipoMovimentacao,
+          quantidade: dadosRecarga.quantidade,
+          data: dadosRecarga.data,
+          recargaId,
+          revendaId: dadosRecarga.revendaId,
+          observacoes: "Recarga de revenda",
         };
         persistir({
           ...estado,
@@ -198,11 +259,33 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           revendas: estado.revendas.map((r) =>
             r.id === recarga.revendaId ? { ...r, ultimaRecarga: recarga.data } : r,
           ),
+          movimentacoes: [mov, ...estado.movimentacoes],
         });
         return { ok: true };
       },
       recargasDaRevenda: (revendaId) =>
         estado.recargas.filter((r) => r.revendaId === revendaId).sort((a, b) => b.data.localeCompare(a.data)),
+
+      saldoServidor: (servidorId) => saldoDe(estado.movimentacoes, servidorId),
+      registrarEntradaCreditos: (servidorId, quantidade, obs) => {
+        const servidor = estado.servidores.find((s) => s.id === servidorId);
+        if (!servidor) return { ok: false, erro: "Servidor não encontrado." };
+        if (quantidade <= 0) return { ok: false, erro: "A quantidade deve ser maior que zero." };
+        const mov: MovimentacaoCredito = {
+          id: `mv${Date.now()}`,
+          servidorId,
+          tipo: "entrada",
+          quantidade,
+          data: isoHoje(),
+          observacoes: obs ?? "Compra de créditos",
+        };
+        persistir({ ...estado, movimentacoes: [mov, ...estado.movimentacoes] });
+        return { ok: true };
+      },
+      movimentacoesDoServidor: (servidorId) =>
+        estado.movimentacoes
+          .filter((m) => m.servidorId === servidorId)
+          .sort((a, b) => b.data.localeCompare(a.data)),
     };
   }, [estado, persistir]);
 

@@ -26,6 +26,10 @@ import {
   despesas as despesasSeed,
   type Despesa,
 } from "@/lib/despesas";
+import {
+  meiosPagamento as meiosPagamentoSeed,
+  type MeioPagamento,
+} from "@/lib/meios-pagamento";
 
 const STORAGE_KEY = "meridian.dados.v1";
 
@@ -37,6 +41,7 @@ interface Estado {
   recargas: RecargaRevenda[];
   movimentacoes: MovimentacaoCredito[];
   despesas: Despesa[];
+  meiosPagamento: MeioPagamento[];
 }
 
 const estadoInicial: Estado = {
@@ -47,6 +52,7 @@ const estadoInicial: Estado = {
   recargas: recargasSeed,
   movimentacoes: movimentacoesSeed,
   despesas: despesasSeed,
+  meiosPagamento: meiosPagamentoSeed,
 };
 
 export type NovoCliente = Omit<Cliente, "id" | "ultimoPagamento" | "valorUltimoPagamento"> &
@@ -57,7 +63,7 @@ interface ContextoDados extends Estado {
   criarCliente: (dados: NovoCliente) => { ok: boolean; erro?: string };
   atualizarCliente: (id: string, dados: NovoCliente) => { ok: boolean; erro?: string };
   removerCliente: (id: string) => void;
-  renovarCliente: (id: string, meses: number, valor: number, novaData?: string) => { ok: boolean; erro?: string };
+  renovarCliente: (id: string, meses: number, valor: number, novaData?: string, meioPagamentoId?: string) => { ok: boolean; erro?: string };
   pagamentosDoCliente: (clienteId: string) => Pagamento[];
   restaurarDemo: () => void;
   // Revendas
@@ -74,11 +80,19 @@ interface ContextoDados extends Estado {
   // Despesas
   criarDespesa: (dados: NovaDespesa) => { ok: boolean; erro?: string };
   removerDespesa: (id: string) => void;
+  // Meios de pagamento
+  criarMeioPagamento: (dados: NovoMeioPagamento) => { ok: boolean; erro?: string };
+  atualizarMeioPagamento: (id: string, dados: NovoMeioPagamento) => { ok: boolean; erro?: string };
+  removerMeioPagamento: (id: string) => { ok: boolean; erro?: string };
+  toggleMeioPagamento: (id: string) => void;
+  meiosPagamentoAtivos: () => MeioPagamento[];
+  nomeMeioPagamento: (id?: string) => string;
 }
 
 export type NovaRevenda = Omit<Revenda, "id" | "ultimaRecarga"> & Partial<Pick<Revenda, "ultimaRecarga">>;
 export type NovaRecarga = Omit<RecargaRevenda, "id" | "custoCredito" | "custoTotal" | "lucro">;
 export type NovaDespesa = Omit<Despesa, "id">;
+export type NovoMeioPagamento = Omit<MeioPagamento, "id" | "criadoEm" | "atualizadoEm">;
 
 const Ctx = createContext<ContextoDados | null>(null);
 
@@ -148,7 +162,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           pagamentos: estado.pagamentos.filter((p) => p.clienteId !== id),
         });
       },
-      renovarCliente: (id, meses, valorPago, novaData) => {
+      renovarCliente: (id, meses, valorPago, novaData, meioPagamentoId) => {
         const data = isoHoje();
         const cliente = estado.clientes.find((c) => c.id === id);
         if (!cliente) return { ok: false, erro: "Cliente não encontrado." };
@@ -180,6 +194,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           valor: valorPago,
           status: "pago",
           tipo: "renovação",
+          meioPagamentoId,
+          origem: "manual",
         };
         const mov: MovimentacaoCredito = {
           id: `mv${Date.now()}`,
@@ -305,6 +321,50 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       },
       removerDespesa: (id) => {
         persistir({ ...estado, despesas: estado.despesas.filter((d) => d.id !== id) });
+      },
+
+      criarMeioPagamento: (dadosMeio) => {
+        if (!dadosMeio.nome.trim()) return { ok: false, erro: "Informe o nome do meio de pagamento." };
+        const agora = isoHoje();
+        const novo: MeioPagamento = {
+          ...dadosMeio,
+          id: `mp${Date.now()}`,
+          criadoEm: agora,
+          atualizadoEm: agora,
+        };
+        persistir({ ...estado, meiosPagamento: [novo, ...estado.meiosPagamento] });
+        return { ok: true };
+      },
+      atualizarMeioPagamento: (id, dadosMeio) => {
+        if (!dadosMeio.nome.trim()) return { ok: false, erro: "Informe o nome do meio de pagamento." };
+        persistir({
+          ...estado,
+          meiosPagamento: estado.meiosPagamento.map((m) =>
+            m.id === id ? { ...m, ...dadosMeio, atualizadoEm: isoHoje() } : m,
+          ),
+        });
+        return { ok: true };
+      },
+      removerMeioPagamento: (id) => {
+        const emUso = estado.pagamentos.some((p) => p.meioPagamentoId === id);
+        if (emUso) return { ok: false, erro: "Este meio de pagamento possui pagamentos vinculados e não pode ser excluído." };
+        persistir({ ...estado, meiosPagamento: estado.meiosPagamento.filter((m) => m.id !== id) });
+        return { ok: true };
+      },
+      toggleMeioPagamento: (id) => {
+        persistir({
+          ...estado,
+          meiosPagamento: estado.meiosPagamento.map((m) =>
+            m.id === id
+              ? { ...m, ativo: !m.ativo, atualizadoEm: isoHoje() }
+              : m,
+          ),
+        });
+      },
+      meiosPagamentoAtivos: () => estado.meiosPagamento.filter((m) => m.ativo),
+      nomeMeioPagamento: (id) => {
+        if (!id) return "—";
+        return estado.meiosPagamento.find((m) => m.id === id)?.nome ?? "—";
       },
     };
   }, [estado, persistir]);

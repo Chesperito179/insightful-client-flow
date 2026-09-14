@@ -36,6 +36,20 @@ export interface Pagamento {
   valor: number;
   status: "pago" | "pendente";
   tipo: "renovação" | "adesão";
+  /** Meio de recebimento utilizado (referência a MeioPagamento). */
+  meioPagamentoId?: string;
+  /** Identificador da transação no provedor (futuro, para integrações de API). */
+  identificadorTransacao?: string;
+  /** Origem do pagamento: manual ou via API (futuro). */
+  origem?: "manual" | "api";
+  /** Provedor que processou o pagamento (futuro). */
+  provedor?: string;
+  /** Data de confirmação do pagamento (futuro, para integrações assíncronas). */
+  dataConfirmacao?: string;
+  /** Referência de cobrança gerada pelo provedor (futuro). */
+  referenciaCobranca?: string;
+  /** Observação livre sobre o pagamento. */
+  observacao?: string;
 }
 
 export const servidores: Servidor[] = [

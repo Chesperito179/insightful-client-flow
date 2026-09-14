@@ -19,14 +19,16 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
   const [meses, setMeses] = useState("1");
   const [valor, setValor] = useState("0");
   const [dataPersonalizada, setDataPersonalizada] = useState("");
+  const [meioPagamentoId, setMeioPagamentoId] = useState("");
 
   useEffect(() => {
     if (cliente) {
       setMeses("1");
       setValor(String(cliente.valor));
       setDataPersonalizada("");
+      setMeioPagamentoId(dados.meiosPagamentoAtivos()[0]?.id ?? "");
     }
-  }, [cliente]);
+  }, [cliente, dados]);
 
   if (!cliente) return null;
 
@@ -87,6 +89,18 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
             <input className={campo} inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} />
           </label>
         </div>
+
+        <label className="grid gap-1">
+          <span className="label-mono">Forma de pagamento</span>
+          <select className={campo} value={meioPagamentoId} onChange={(e) => setMeioPagamentoId(e.target.value)}>
+            {dados.meiosPagamentoAtivos().map((m) => (
+              <option key={m.id} value={m.id}>{m.nome}</option>
+            ))}
+            {dados.meiosPagamentoAtivos().length === 0 && (
+              <option value="">— Nenhum meio cadastrado —</option>
+            )}
+          </select>
+        </label>
 
         {ePersonalizado && (
           <label className="grid gap-1">
@@ -154,11 +168,11 @@ export function RenovarDialog({ cliente, onFechar }: { cliente: Cliente | null; 
                   toast.error("A nova data de expiração deve ser posterior à data de expiração atual.");
                   return;
                 }
-                const r = dados.renovarCliente(cliente.id, 0, valorPago, dataPersonalizada);
+                const r = dados.renovarCliente(cliente.id, 0, valorPago, dataPersonalizada, meioPagamentoId || undefined);
                 if (!r.ok) { toast.error(r.erro ?? "Não foi possível renovar."); return; }
                 toast.success(`Renovado até ${dateBR(dataPersonalizada)}.`);
               } else {
-                const r = dados.renovarCliente(cliente.id, qtdMeses, valorPago);
+                const r = dados.renovarCliente(cliente.id, qtdMeses, valorPago, undefined, meioPagamentoId || undefined);
                 if (!r.ok) { toast.error(r.erro ?? "Não foi possível renovar."); return; }
                 toast.success(`Renovado até ${dateBR(novaExpiracao)}.`);
               }

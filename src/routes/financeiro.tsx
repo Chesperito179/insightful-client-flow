@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { clienteDe, servidorDe, hoje } from "@/lib/data";
 import { brl, dateBR, dayMonth } from "@/lib/format";
+import { type Periodo, periodoRange, dentroDe, periodoLabel } from "@/lib/periodo";
 import { useAppData } from "@/lib/store";
 
 export const Route = createFileRoute("/financeiro")({
@@ -35,8 +36,6 @@ export const Route = createFileRoute("/financeiro")({
   component: FinanceiroPage,
 });
 
-type Periodo = "mes" | "anterior" | "30dias";
-
 interface Lancamento {
   id: string;
   data: string;
@@ -47,25 +46,6 @@ interface Lancamento {
   lucro: number;
   categoria: "cliente" | "revenda" | "despesa";
 }
-
-function periodoRange(periodo: Periodo, ref: Date): { inicio: Date; fim: Date } {
-  if (periodo === "30dias") {
-    const fim = new Date(ref);
-    const inicio = new Date(ref);
-    inicio.setDate(inicio.getDate() - 30);
-    return { inicio, fim };
-  }
-  const ano = ref.getFullYear();
-  const mes = periodo === "anterior" ? ref.getMonth() - 1 : ref.getMonth();
-  const inicio = new Date(ano, mes, 1);
-  const fim = new Date(ano, mes + 1, 0, 23, 59, 59);
-  return { inicio, fim };
-}
-
-const dentroDe = (iso: string, r: { inicio: Date; fim: Date }) => {
-  const d = new Date(`${iso}T12:00:00`);
-  return d >= r.inicio && d <= r.fim;
-};
 
 function FinanceiroPage() {
   const dados = useAppData();
@@ -183,12 +163,7 @@ function FinanceiroPage() {
     };
   }, [dados, range]);
 
-  const periodoLabel =
-    periodo === "mes"
-      ? "Este mês"
-      : periodo === "anterior"
-        ? "Mês anterior"
-        : "Últimos 30 dias";
+  const pLabel = periodoLabel(periodo);
 
   const despesaExcluindo = dados.despesas.find((d) => d.id === excluindoDespesa);
 
@@ -249,7 +224,7 @@ function FinanceiroPage() {
         style={{ animationDelay: "240ms" }}
       >
         <div className="flex items-center justify-between">
-          <p className="label-mono">Lucro estimado — {periodoLabel}</p>
+          <p className="label-mono">Lucro estimado — {pLabel}</p>
           <p className="font-mono text-2xl font-medium text-foreground">{brl(resumo.lucroEstimado)}</p>
         </div>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-foreground/10">
@@ -271,7 +246,7 @@ function FinanceiroPage() {
         style={{ animationDelay: "300ms" }}
       >
         <div className="flex items-center justify-between px-4 py-3">
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">Detalhamento — {periodoLabel}</h2>
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">Detalhamento — {pLabel}</h2>
           <span className="label-mono">{lancamentos.length} lançamento(s)</span>
         </div>
         <div className="overflow-x-auto">

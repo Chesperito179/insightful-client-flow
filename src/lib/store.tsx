@@ -68,7 +68,7 @@ interface ContextoDados extends Estado {
 }
 
 export type NovaRevenda = Omit<Revenda, "id" | "ultimaRecarga"> & Partial<Pick<Revenda, "ultimaRecarga">>;
-export type NovaRecarga = Omit<RecargaRevenda, "id">;
+export type NovaRecarga = Omit<RecargaRevenda, "id" | "custoCredito" | "custoTotal" | "lucro">;
 
 const Ctx = createContext<ContextoDados | null>(null);
 
@@ -145,7 +145,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
         const mesesParaCusto =
           novaData && meses === 0
-            ? mesesEntre(Math.max(cliente.expiracao, data), novaData)
+            ? mesesEntre(cliente.expiracao > data ? cliente.expiracao : data, novaData)
             : meses;
         const qtdCreditos = mesesParaCusto;
         const saldo = saldoDe(estado.movimentacoes, cliente.servidorId);

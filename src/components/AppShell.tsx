@@ -6,10 +6,10 @@ import { brl } from "@/lib/format";
 const navegacao = [
   { to: "/", label: "Início" },
   { to: "/clientes", label: "Clientes" },
-  { to: "/revendas", label: "Revendas" },
-  { to: "/financeiro", label: "Financeiro" },
   { to: "/renovacoes", label: "Renovações" },
+  { to: "/revendas", label: "Revendas" },
   { to: "/pagamentos", label: "Pagamentos" },
+  { to: "/financeiro", label: "Financeiro" },
   { to: "/relatorios", label: "Relatórios" },
   { to: "/configuracoes", label: "Configurações" },
 ] as const;
@@ -106,7 +106,7 @@ export function AppShell({ titulo, subtitulo, alertas = 0, children }: AppShellP
                 className="shrink-0 rounded-lg px-3 py-1.5 text-muted-foreground"
                 activeProps={{
                   className:
-                    "shrink-0 rounded-lg bg-foreground/10 px-3 py-1.5 font-medium text-foreground",
+                    "shrink-0 rounded-lg bg-foreground/10 px-3 py-1.5 font-medium text-foreground ring-1 ring-foreground/10",
                 }}
               >
                 {item.label}

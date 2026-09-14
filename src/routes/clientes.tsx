@@ -159,7 +159,7 @@ function ClientesPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         aria-label={`Ações de ${c.nome}`}
-                        className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                        className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20"
                       >
                         ⋮
                       </DropdownMenuTrigger>

@@ -22,6 +22,10 @@ import {
   type MovimentacaoCredito,
   type TipoMovimentacao,
 } from "@/lib/movimentacoes";
+import {
+  despesas as despesasSeed,
+  type Despesa,
+} from "@/lib/despesas";
 
 const STORAGE_KEY = "meridian.dados.v1";
 
@@ -32,6 +36,7 @@ interface Estado {
   revendas: Revenda[];
   recargas: RecargaRevenda[];
   movimentacoes: MovimentacaoCredito[];
+  despesas: Despesa[];
 }
 
 const estadoInicial: Estado = {
@@ -41,6 +46,7 @@ const estadoInicial: Estado = {
   revendas: revendasSeed,
   recargas: recargasSeed,
   movimentacoes: movimentacoesSeed,
+  despesas: despesasSeed,
 };
 
 export type NovoCliente = Omit<Cliente, "id" | "ultimoPagamento" | "valorUltimoPagamento"> &
@@ -65,10 +71,14 @@ interface ContextoDados extends Estado {
   saldoServidor: (servidorId: string) => number;
   registrarEntradaCreditos: (servidorId: string, quantidade: number, observacoes?: string) => { ok: boolean; erro?: string };
   movimentacoesDoServidor: (servidorId: string) => MovimentacaoCredito[];
+  // Despesas
+  criarDespesa: (dados: NovaDespesa) => { ok: boolean; erro?: string };
+  removerDespesa: (id: string) => void;
 }
 
 export type NovaRevenda = Omit<Revenda, "id" | "ultimaRecarga"> & Partial<Pick<Revenda, "ultimaRecarga">>;
 export type NovaRecarga = Omit<RecargaRevenda, "id" | "custoCredito" | "custoTotal" | "lucro">;
+export type NovaDespesa = Omit<Despesa, "id">;
 
 const Ctx = createContext<ContextoDados | null>(null);
 
@@ -285,6 +295,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         estado.movimentacoes
           .filter((m) => m.servidorId === servidorId)
           .sort((a, b) => b.data.localeCompare(a.data)),
+
+      criarDespesa: (dadosDespesa) => {
+        if (!dadosDespesa.descricao.trim()) return { ok: false, erro: "Informe a descrição da despesa." };
+        if (dadosDespesa.valor <= 0) return { ok: false, erro: "O valor deve ser maior que zero." };
+        const nova: Despesa = { ...dadosDespesa, id: `d${Date.now()}` };
+        persistir({ ...estado, despesas: [nova, ...estado.despesas] });
+        return { ok: true };
+      },
+      removerDespesa: (id) => {
+        persistir({ ...estado, despesas: estado.despesas.filter((d) => d.id !== id) });
+      },
     };
   }, [estado, persistir]);
 

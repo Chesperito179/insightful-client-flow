@@ -68,7 +68,7 @@ function RevendasPage() {
       </p>
 
       <section className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[200px] flex-1">
+        <div className="relative w-full sm:min-w-[200px] sm:flex-1">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-faint">⌕</span>
           <input
             value={busca}
@@ -121,7 +121,7 @@ function RevendasPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         aria-label={`Ações de ${r.nome}`}
-                        className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                        className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20"
                       >
                         ⋮
                       </DropdownMenuTrigger>

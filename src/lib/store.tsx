@@ -403,8 +403,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         if (!id) return "—";
         return estado.meiosPagamento.find((m) => m.id === id)?.nome ?? "—";
       },
+
+      registrarLog,
+      logsDoCliente: (clienteId) =>
+        estado.logs
+          .filter((l) => l.clienteId === clienteId)
+          .sort((a, b) => b.dataHora.localeCompare(a.dataHora)),
+      usuariosDosLogs: () => Array.from(new Set(estado.logs.map((l) => l.usuarioNome))).sort(),
     };
-  }, [estado, persistir]);
+  }, [estado, persistir, registrarLog]);
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
 }

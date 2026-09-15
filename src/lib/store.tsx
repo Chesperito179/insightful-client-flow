@@ -136,6 +136,31 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  /**
+   * Registra um log de auditoria. Usa atualização funcional para poder
+   * ser chamado com segurança a partir de qualquer ação futura.
+   */
+  const registrarLog = useCallback((dados: NovoLog): LogAuditoria => {
+    const log: LogAuditoria = {
+      nivel: "info",
+      ...dados,
+      id: `lg${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      dataHora: dados.dataHora ?? new Date().toISOString(),
+      usuarioNome: dados.usuarioNome ?? USUARIO_PADRAO_LOG,
+      origem: dados.origem ?? "manual",
+    };
+    setEstado((prev) => {
+      const proximo = { ...prev, logs: [log, ...prev.logs] };
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(proximo));
+      } catch {
+        /* armazenamento indisponível */
+      }
+      return proximo;
+    });
+    return log;
+  }, []);
+
   const valor = useMemo<ContextoDados>(() => {
     const usuarioExiste = (usuario: string, ignorarId?: string) =>
       estado.clientes.some((c) => normalizar(c.usuario) === normalizar(usuario) && c.id !== ignorarId);

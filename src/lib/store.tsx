@@ -95,6 +95,10 @@ interface ContextoDados extends Estado {
   toggleMeioPagamento: (id: string) => void;
   meiosPagamentoAtivos: () => MeioPagamento[];
   nomeMeioPagamento: (id?: string) => string;
+  // Logs / auditoria
+  registrarLog: (dados: NovoLog) => LogAuditoria;
+  logsDoCliente: (clienteId: string) => LogAuditoria[];
+  usuariosDosLogs: () => string[];
 }
 
 export type NovaRevenda = Omit<Revenda, "id" | "ultimaRecarga"> & Partial<Pick<Revenda, "ultimaRecarga">>;

@@ -30,6 +30,12 @@ import {
   meiosPagamento as meiosPagamentoSeed,
   type MeioPagamento,
 } from "@/lib/meios-pagamento";
+import {
+  logs as logsSeed,
+  USUARIO_PADRAO_LOG,
+  type LogAuditoria,
+  type NovoLog,
+} from "@/lib/logs";
 
 const STORAGE_KEY = "meridian.dados.v1";
 

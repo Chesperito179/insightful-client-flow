@@ -231,7 +231,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           valor: valorPago,
           status: "pago",
           tipo: "renovação",
-          meioPagamentoId,
+          ...(meioPagamentoId ? { meioPagamentoId } : {}),
           origem: "manual",
         };
         const mov: MovimentacaoCredito = {

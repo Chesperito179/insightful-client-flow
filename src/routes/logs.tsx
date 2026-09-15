@@ -54,8 +54,8 @@ function LogsPage() {
     () =>
       filtrarLogs(dados.logs, {
         termo,
-        dataInicio: dataInicio || undefined,
-        dataFim: dataFim || undefined,
+        ...(dataInicio ? { dataInicio } : {}),
+        ...(dataFim ? { dataFim } : {}),
         usuario,
         acao,
         entidade,

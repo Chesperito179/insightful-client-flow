@@ -12,6 +12,7 @@ const navegacao = [
   { to: "/financeiro", label: "Financeiro" },
   { to: "/relatorios", label: "Relatórios" },
   { to: "/configuracoes", label: "Configurações" },
+  { to: "/logs", label: "Logs" },
 ] as const;
 
 interface AppShellProps {

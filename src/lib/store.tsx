@@ -30,6 +30,12 @@ import {
   meiosPagamento as meiosPagamentoSeed,
   type MeioPagamento,
 } from "@/lib/meios-pagamento";
+import {
+  logs as logsSeed,
+  USUARIO_PADRAO_LOG,
+  type LogAuditoria,
+  type NovoLog,
+} from "@/lib/logs";
 
 const STORAGE_KEY = "meridian.dados.v1";
 
@@ -42,6 +48,7 @@ interface Estado {
   movimentacoes: MovimentacaoCredito[];
   despesas: Despesa[];
   meiosPagamento: MeioPagamento[];
+  logs: LogAuditoria[];
 }
 
 const estadoInicial: Estado = {
@@ -53,6 +60,7 @@ const estadoInicial: Estado = {
   movimentacoes: movimentacoesSeed,
   despesas: despesasSeed,
   meiosPagamento: meiosPagamentoSeed,
+  logs: logsSeed,
 };
 
 export type NovoCliente = Omit<Cliente, "id" | "ultimoPagamento" | "valorUltimoPagamento"> &
@@ -87,6 +95,10 @@ interface ContextoDados extends Estado {
   toggleMeioPagamento: (id: string) => void;
   meiosPagamentoAtivos: () => MeioPagamento[];
   nomeMeioPagamento: (id?: string) => string;
+  // Logs / auditoria
+  registrarLog: (dados: NovoLog) => LogAuditoria;
+  logsDoCliente: (clienteId: string) => LogAuditoria[];
+  usuariosDosLogs: () => string[];
 }
 
 export type NovaRevenda = Omit<Revenda, "id" | "ultimaRecarga"> & Partial<Pick<Revenda, "ultimaRecarga">>;
@@ -122,6 +134,31 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     } catch {
       /* armazenamento indisponível */
     }
+  }, []);
+
+  /**
+   * Registra um log de auditoria. Usa atualização funcional para poder
+   * ser chamado com segurança a partir de qualquer ação futura.
+   */
+  const registrarLog = useCallback((dados: NovoLog): LogAuditoria => {
+    const log: LogAuditoria = {
+      nivel: "info",
+      ...dados,
+      id: `lg${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      dataHora: dados.dataHora ?? new Date().toISOString(),
+      usuarioNome: dados.usuarioNome ?? USUARIO_PADRAO_LOG,
+      origem: dados.origem ?? "manual",
+    };
+    setEstado((prev) => {
+      const proximo = { ...prev, logs: [log, ...prev.logs] };
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(proximo));
+      } catch {
+        /* armazenamento indisponível */
+      }
+      return proximo;
+    });
+    return log;
   }, []);
 
   const valor = useMemo<ContextoDados>(() => {
@@ -194,7 +231,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           valor: valorPago,
           status: "pago",
           tipo: "renovação",
-          meioPagamentoId,
+          ...(meioPagamentoId ? { meioPagamentoId } : {}),
           origem: "manual",
         };
         const mov: MovimentacaoCredito = {
@@ -366,8 +403,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         if (!id) return "—";
         return estado.meiosPagamento.find((m) => m.id === id)?.nome ?? "—";
       },
+
+      registrarLog,
+      logsDoCliente: (clienteId) =>
+        estado.logs
+          .filter((l) => l.clienteId === clienteId)
+          .sort((a, b) => b.dataHora.localeCompare(a.dataHora)),
+      usuariosDosLogs: () => Array.from(new Set(estado.logs.map((l) => l.usuarioNome))).sort(),
     };
-  }, [estado, persistir]);
+  }, [estado, persistir, registrarLog]);
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
 }

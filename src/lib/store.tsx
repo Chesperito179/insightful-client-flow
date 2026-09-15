@@ -48,6 +48,7 @@ interface Estado {
   movimentacoes: MovimentacaoCredito[];
   despesas: Despesa[];
   meiosPagamento: MeioPagamento[];
+  logs: LogAuditoria[];
 }
 
 const estadoInicial: Estado = {
@@ -59,6 +60,7 @@ const estadoInicial: Estado = {
   movimentacoes: movimentacoesSeed,
   despesas: despesasSeed,
   meiosPagamento: meiosPagamentoSeed,
+  logs: logsSeed,
 };
 
 export type NovoCliente = Omit<Cliente, "id" | "ultimoPagamento" | "valorUltimoPagamento"> &

@@ -441,7 +441,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               entidadeRotulo: nomeServidor(cliente.servidorId),
               clienteId: id,
               clienteNome: cliente.nome,
-              descricao: `Saída de ${qtdCreditos} crédito(s) em ${nomeServidor(cliente.servidorId)} por renovação.`,
+              descricao: `Saída de ${qtdBR(qtdCreditos)} crédito(s) em ${nomeServidor(cliente.servidorId)} por renovação.`,
               metadados: {
                 tipoMovimentacao: "saida_renovacao",
                 servidor: nomeServidor(cliente.servidorId),

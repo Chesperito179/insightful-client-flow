@@ -50,7 +50,7 @@ interface Lancamento {
 function RelatoriosPage() {
   const dados = useAppData();
   const [periodo, setPeriodo] = useState<Periodo>("mes");
-  const range = useMemo(() => periodoRange(periodo, hoje), [periodo]);
+  const range = useMemo(() => periodoRange(periodo, hoje()), [periodo]);
   const pLabel = periodoLabel(periodo);
 
   const resumo = useMemo(() => {

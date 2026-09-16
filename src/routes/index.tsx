@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { StatusDot } from "@/components/StatusDot";
 import {
   clienteDe,
+  hoje,
   proximasRenovacoes,
   resumoDashboard,
   statusExpiracao,
@@ -10,6 +11,20 @@ import {
 } from "@/lib/data";
 import { brl, dayMonth, num, percent } from "@/lib/format";
 import { useAppData } from "@/lib/store";
+
+const diasSemana = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+const mesesAno = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+function subtituloDinamico() {
+  const d = hoje();
+  const dia = diasSemana[d.getDay()];
+  const diaNum = d.getDate();
+  const mes = mesesAno[d.getMonth()];
+  const ano = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${dia}, ${diaNum} ${mes} ${ano} · ${hh}:${mm}`;
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,7 +47,14 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const dados = useAppData();
-  const r = resumoDashboard(dados.clientes, dados.pagamentos, dados.servidores);
+  const r = resumoDashboard(
+    dados.clientes,
+    dados.pagamentos,
+    dados.servidores,
+    dados.movimentacoes,
+    dados.recargas,
+    dados.despesas,
+  );
   const renovacoes = proximasRenovacoes(dados.clientes);
   const pagos = ultimosPagamentos(dados.pagamentos);
 
@@ -56,7 +78,7 @@ function Dashboard() {
   ];
 
   return (
-    <AppShell titulo="Início" subtitulo="sexta, 12 set 2026 · 14:32" alertas={3}>
+    <AppShell titulo="Início" subtitulo={subtituloDinamico()} alertas={3}>
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
         {kpis.map((kpi, i) => {
           const classes = `animate-rise block rounded-xl p-4 backdrop-blur-md ${

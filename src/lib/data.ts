@@ -6,6 +6,10 @@
  * reais, sem alterar as telas que as consomem.
  */
 
+import type { MovimentacaoCredito } from "@/lib/movimentacoes";
+import type { RecargaRevenda } from "@/lib/revendas";
+import type { Despesa } from "@/lib/despesas";
+
 export type ExpirationStatus = "ativo" | "vencendo" | "vencido";
 
 export interface Servidor {
@@ -175,15 +179,19 @@ export const pagamentos: Pagamento[] = [
   { id: "p7", clienteId: "c7", data: "2026-09-02", valor: 45, status: "pago", tipo: "renovação" },
 ];
 
-/** Data de referência do sistema (nas próximas etapas passa a ser "hoje" real). */
-export const hoje = new Date("2026-09-12T12:00:00");
+/** Data de referência do sistema — sempre a data atual real. */
+export const hoje = () => {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  return d;
+};
 
-export const diasAteExpirar = (expiracao: string, ref: Date = hoje) => {
+export const diasAteExpirar = (expiracao: string, ref: Date = hoje()) => {
   const alvo = new Date(`${expiracao}T12:00:00`).getTime();
   return Math.round((alvo - ref.getTime()) / 86_400_000);
 };
 
-export const statusExpiracao = (expiracao: string, ref: Date = hoje): ExpirationStatus => {
+export const statusExpiracao = (expiracao: string, ref: Date = hoje()): ExpirationStatus => {
   const dias = diasAteExpirar(expiracao, ref);
   if (dias < 0) return "vencido";
   if (dias <= 7) return "vencendo";
@@ -216,25 +224,55 @@ export const resumoDashboard = (
   listaClientes: Cliente[] = clientes,
   listaPagamentos: Pagamento[] = pagamentos,
   listaServidores: Servidor[] = servidores,
+  listaMovimentacoes: MovimentacaoCredito[] = [],
+  listaRecargas: RecargaRevenda[] = [],
+  listaDespesas: Despesa[] = [],
 ): ResumoDashboard => {
+  const ref = hoje();
   const total = listaClientes.length;
-  const vencidos = listaClientes.filter((c) => statusExpiracao(c.expiracao) === "vencido");
-  const vencendo = listaClientes.filter((c) => statusExpiracao(c.expiracao) === "vencendo");
-  const vencemHoje = listaClientes.filter((c) => diasAteExpirar(c.expiracao) === 0).length;
+  const vencidos = listaClientes.filter((c) => statusExpiracao(c.expiracao, ref) === "vencido");
+  const vencendo = listaClientes.filter((c) => statusExpiracao(c.expiracao, ref) === "vencendo");
+  const vencemHoje = listaClientes.filter((c) => diasAteExpirar(c.expiracao, ref) === 0).length;
   const ativos = total - vencidos.length;
 
-  const mesRef = hoje.getMonth();
-  const doMes = listaPagamentos.filter((p) => new Date(`${p.data}T12:00:00`).getMonth() === mesRef);
+  const mesRef = ref.getMonth();
+  const anoRef = ref.getFullYear();
+  const doMes = listaPagamentos.filter((p) => {
+    const d = new Date(`${p.data}T12:00:00`);
+    return d.getMonth() === mesRef && d.getFullYear() === anoRef;
+  });
   const recebidoMes = doMes.filter((p) => p.status === "pago").reduce((s, p) => s + p.valor, 0);
+
+  // Previsto receber: pagamentos pendentes do mês + valor de clientes que vencem
+  // (sem somar o mesmo valor duas vezes — um cliente pendente não é também "vencendo")
+  const idsPendentes = new Set(doMes.filter((p) => p.status === "pendente").map((p) => p.clienteId));
   const previstoReceber =
     doMes.filter((p) => p.status === "pendente").reduce((s, p) => s + p.valor, 0) +
-    vencendo.reduce((s, c) => s + c.valor, 0);
+    vencendo.filter((c) => !idsPendentes.has(c.id)).reduce((s, c) => s + c.valor, 0);
+
+  // Custo real: usa a movimentação vinculada ao pagamento (créditos fracionados)
   const gastosMes = doMes
     .filter((p) => p.status === "pago")
     .reduce((s, p) => {
+      const mov = listaMovimentacoes.find((m) => m.pagamentoId === p.id);
       const cliente = clienteDe(p.clienteId, listaClientes);
-      return s + (cliente ? servidorDe(cliente, listaServidores).custoCredito : 0);
+      const servidor = cliente ? servidorDe(cliente, listaServidores) : null;
+      return s + (servidor && mov ? servidor.custoCredito * mov.quantidade : 0);
     }, 0);
+
+  // Lucro de recargas de revenda no mês
+  const recargasMes = listaRecargas.filter((r) => {
+    const d = new Date(`${r.data}T12:00:00`);
+    return d.getMonth() === mesRef && d.getFullYear() === anoRef;
+  });
+  const lucroRecargas = recargasMes.reduce((s, r) => s + r.lucro, 0);
+
+  // Despesas do mês
+  const despesasMes = listaDespesas.filter((d) => {
+    const dt = new Date(`${d.data}T12:00:00`);
+    return dt.getMonth() === mesRef && dt.getFullYear() === anoRef;
+  });
+  const totalDespesas = despesasMes.reduce((s, d) => s + d.valor, 0);
 
   return {
     total,
@@ -245,7 +283,7 @@ export const resumoDashboard = (
     recebidoMes,
     previstoReceber,
     gastosMes,
-    lucroEstimado: recebidoMes - gastosMes,
+    lucroEstimado: recebidoMes - gastosMes + lucroRecargas - totalDespesas,
     valorVencidos: vencidos.reduce((s, c) => s + c.valor, 0),
     percentualAtivos: total ? (ativos / total) * 100 : 0,
   };
@@ -253,6 +291,7 @@ export const resumoDashboard = (
 
 export const proximasRenovacoes = (lista: Cliente[] = clientes) =>
   [...lista].sort((a, b) => diasAteExpirar(a.expiracao) - diasAteExpirar(b.expiracao)).slice(0, 6);
+
 
 export const ultimosPagamentos = (lista: Pagamento[] = pagamentos) =>
   [...lista].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 6);
@@ -266,7 +305,7 @@ export const somarMeses = (iso: string, meses: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-export const isoHoje = (ref: Date = hoje) => {
+export const isoHoje = (ref: Date = hoje()) => {
   const d = new Date(ref);
   d.setHours(12, 0, 0, 0);
   return d.toISOString().slice(0, 10);

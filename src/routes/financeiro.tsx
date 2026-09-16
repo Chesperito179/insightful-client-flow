@@ -53,7 +53,7 @@ function FinanceiroPage() {
   const [despesaAberto, setDespesaAberto] = useState(false);
   const [excluindoDespesa, setExcluindoDespesa] = useState<string | null>(null);
 
-  const range = useMemo(() => periodoRange(periodo, hoje), [periodo]);
+  const range = useMemo(() => periodoRange(periodo, hoje()), [periodo]);
 
   const lancamentos = useMemo<Lancamento[]>(() => {
     const itens: Lancamento[] = [];

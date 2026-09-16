@@ -38,6 +38,8 @@ import {
   type NovoLog,
 } from "@/lib/logs";
 
+import { dateBR } from "@/lib/format";
+
 const STORAGE_KEY = "meridian.dados.v1";
 
 interface Estado {

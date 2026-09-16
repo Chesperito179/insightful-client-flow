@@ -396,7 +396,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               clienteId: id,
               clienteNome: cliente.nome,
               descricao: personalizada
-                ? `Renovação personalizada de "${cliente.nome}" até ${novaExpiracao}.`
+                ? `Renovação personalizada de "${cliente.nome}" até ${dateBR(novaExpiracao)}.`
                 : `Renovação de "${cliente.nome}" por ${meses} mês(es).`,
               alteracoes: [
                 {

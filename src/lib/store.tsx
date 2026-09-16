@@ -111,6 +111,9 @@ const Ctx = createContext<ContextoDados | null>(null);
 
 const normalizar = (v: string) => v.trim().toLowerCase();
 
+/** Exibição da quantidade de créditos no texto do log (o valor exato fica nos metadados). */
+const qtdBR = (n: number) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 4 }).format(n);
+
 const saldoDe = (lista: MovimentacaoCredito[], servidorId: string) =>
   lista
     .filter((m) => m.servidorId === servidorId)

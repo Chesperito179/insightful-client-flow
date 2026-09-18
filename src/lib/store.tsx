@@ -98,6 +98,8 @@ interface ContextoDados extends Estado {
   toggleMeioPagamento: (id: string) => void;
   meiosPagamentoAtivos: () => MeioPagamento[];
   nomeMeioPagamento: (id?: string) => string;
+  /** Pagamentos vinculados a um meio de recebimento (sem duplicar dados). */
+  pagamentosDoMeio: (meioId: string) => Pagamento[];
   // Logs / auditoria
   registrarLog: (dados: NovoLog) => LogAuditoria;
   logsDoCliente: (clienteId: string) => LogAuditoria[];
@@ -796,6 +798,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         );
       },
       meiosPagamentoAtivos: () => estado.meiosPagamento.filter((m) => m.ativo),
+      pagamentosDoMeio: (meioId) =>
+        estado.pagamentos
+          .filter((p) => p.meioPagamentoId === meioId)
+          .sort((a, b) => (a.data < b.data ? 1 : -1)),
       nomeMeioPagamento: (id) => {
         if (!id) return "—";
         return estado.meiosPagamento.find((m) => m.id === id)?.nome ?? "—";

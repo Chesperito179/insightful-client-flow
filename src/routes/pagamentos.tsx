@@ -147,7 +147,9 @@ function PagamentosPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
-              {dados.meiosPagamento.map((m) => (
+              {dados.meiosPagamento.map((m) => {
+                const vinculados = dados.pagamentosDoMeio(m.id).length;
+                return (
                 <tr key={m.id} className="transition-colors hover:bg-foreground/[0.03]">
                   <td className="px-4 py-2.5 text-foreground">{m.nome}</td>
                   <td className="px-2 py-2.5 font-mono text-muted-foreground">{tipoLabel[m.tipo]}</td>
@@ -171,6 +173,13 @@ function PagamentosPage() {
                     <div className="flex items-center justify-end gap-2">
                       <button
                         type="button"
+                        onClick={() => setVisualizando(m)}
+                        className="rounded-md px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                      >
+                        Visualizar
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => abrirEdicao(m)}
                         className="rounded-md px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
                       >
@@ -186,14 +195,21 @@ function PagamentosPage() {
                       <button
                         type="button"
                         onClick={() => setExcluindo(m)}
-                        className="rounded-md px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+                        disabled={vinculados > 0}
+                        title={
+                          vinculados > 0
+                            ? "Possui pagamentos vinculados e não pode ser excluído."
+                            : undefined
+                        }
+                        className="rounded-md px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
                       >
                         Excluir
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {dados.meiosPagamento.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center font-mono text-[12px] text-muted-foreground">

@@ -264,6 +264,12 @@ function PagamentosPage() {
 
       <MeioPagamentoForm meio={editando} aberto={formAberto} onFechar={() => setFormAberto(false)} />
 
+      <MeioPagamentoDetalhes
+        meio={visualizando}
+        aberto={!!visualizando}
+        onFechar={() => setVisualizando(null)}
+      />
+
       <AlertDialog open={!!excluindo} onOpenChange={(o) => !o && setExcluindo(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { EmAndamento } from "@/components/EmAndamento";
+import { MeioPagamentoDetalhes } from "@/components/pagamentos/MeioPagamentoDetalhes";
 import { MeioPagamentoForm } from "@/components/pagamentos/MeioPagamentoForm";
 import {
   AlertDialog,
@@ -64,6 +65,7 @@ function PagamentosPage() {
   const [formAberto, setFormAberto] = useState(false);
   const [editando, setEditando] = useState<MeioPagamento | null>(null);
   const [excluindo, setExcluindo] = useState<MeioPagamento | null>(null);
+  const [visualizando, setVisualizando] = useState<MeioPagamento | null>(null);
 
   const abrirNovo = () => {
     setEditando(null);

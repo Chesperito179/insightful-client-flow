@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { LogDetalhes } from "@/components/logs/LogDetalhes";
+import { LogDetalhes } from "@/components/auditoria/LogDetalhes";
 import {
   dataHoraBR,
   filtrarLogs,
